@@ -1,5 +1,5 @@
 //#include <iostream>
-#include "cache_lib.cc"
+#include "cache.hh"
 //#include <vector>
 //using namespace std;
 
