@@ -8,7 +8,7 @@ SET(CMAKE_CXX_COMPILER "g++")
 
 project(hash_it_out CXX)
 
-SET(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -std=c++11 -stdlib=libc++")
+SET(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -std=c++17 -stdlib=libc++")
 
 add_executable(test test.cc cache_lib.cc evictor_lib.cc cache.hh evictor.hh)
 
