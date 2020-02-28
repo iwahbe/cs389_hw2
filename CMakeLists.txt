@@ -8,7 +8,14 @@ SET(CMAKE_CXX_COMPILER "g++")
 
 project(hash_it_out CXX)
 
+add_library(cache STATIC cache_lib.cc cache.hh evictor.hh)
+
+add_library(fifo_evictor STATIC evictor.hh fifo_evictor.hh fifo_evictor.cc)
+
 SET(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -std=c++17 -stdlib=libc++")
 
-add_executable(test test.cc cache_lib.cc evictor_lib.cc cache.hh evictor.hh)
 
+
+add_executable(test test.cc)
+target_link_libraries(test PUBLIC cache)
+target_link_libraries(test PUBLIC fifo_evictor)

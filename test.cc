@@ -1,4 +1,5 @@
 #include "cache.hh"
+#include "fifo_evictor.hh"
 #include <iostream>
 using namespace std;
 
