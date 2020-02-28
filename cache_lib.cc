@@ -62,13 +62,22 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
   get(key, current);
   auto newsize = size + pImpl_->current_mem - current;
   if (newsize > pImpl_->maxmem) {
-    // TODO: this is where the eviction policy takes place
-    return;
+    if (pImpl_->evictor == nullptr || size > pImpl_->maxmem) {
+      // no evictor => no evictions
+      // to big to store => why bother evicting
+      return;
+    }
+    while (pImpl_->current_mem + size > pImpl_->maxmem) {
+      del(pImpl_->evictor->evict());
+    }
   }
   pImpl_->current_mem += size;
   Cache::Impl::MapNode n;
   n.size = size;
   n.val = val;
+  if (pImpl_->evictor != nullptr) {
+    pImpl_->evictor->touch_key(key);
+  }
   pImpl_->map.insert_or_assign(key, n);
   pImpl_->resize();
 }
@@ -84,7 +93,9 @@ Cache::val_type Cache::get(key_type key, Cache::size_type &val_size) const
 {
   auto search = pImpl_->map.find(key);
   if (search != pImpl_->map.end()) {
-
+    if (pImpl_->evictor != nullptr) {
+      pImpl_->evictor->touch_key(key);
+    }
     val_size = search->second.size;
     return search->second.val;
   }

@@ -12,6 +12,8 @@ add_library(cache STATIC cache_lib.cc cache.hh evictor.hh)
 
 add_library(fifo_evictor STATIC evictor.hh fifo_evictor.hh fifo_evictor.cc)
 
+add_library(lru_evictor STATIC evictor.hh lru_evictor.hh lru_evictor.cc)
+
 SET(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -std=c++17 -stdlib=libc++")
 
 
@@ -19,3 +21,4 @@ SET(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -std=c++17 -stdlib=libc++")
 add_executable(test test.cc)
 target_link_libraries(test PUBLIC cache)
 target_link_libraries(test PUBLIC fifo_evictor)
+target_link_libraries(test PUBLIC lru_evictor)
