@@ -3,37 +3,36 @@
 
 class Cache::Impl {
     public:
-
+  // Hash map value
   using MapNode = struct {
     Cache::size_type size;
     Cache::val_type val;
   };
 
-  
   Impl(Cache::size_type maxmem, float max_load_factor, Evictor *evictor,
        Cache::hash_func hasher)
-      : maxmem(maxmem), max_load_factor(max_load_factor), evictor(evictor),
-        hasher(hasher), current_mem(0)
+      : maxmem(maxmem), evictor(evictor), hasher(hasher), current_mem(0)
   {
     auto comp = [](key_type k1, key_type k2) { return k1 == k2; };
     map = std::unordered_map<key_type, MapNode, Cache::hash_func,
-                                 std::function<bool(key_type, key_type)>>(
-        0, hasher, comp);
-  }
-  ~Impl()
-  {
-    delete evictor;
-    // All other structures are deleteted on drop
+                             std::function<bool(key_type, key_type)>>(0, hasher,
+                                                                      comp);
+    map.max_load_factor(max_load_factor);
   }
 
+  ~Impl() { delete evictor; }
+
+  // owned values
   Cache::size_type maxmem;
-  float max_load_factor;
   Evictor *evictor;
   Cache::hash_func hasher;
   std::unordered_map<key_type, MapNode, Cache::hash_func,
                      std::function<bool(key_type, key_type)>>
       map;
   Cache::size_type current_mem;
+
+  // owned functions
+  void resize();
 };
 
 Cache::Cache(Cache::size_type maxmem, float max_load_factor, Evictor *evictor,
@@ -47,6 +46,8 @@ Cache::~Cache()
   // cache holds only a unique ptr to Impl, which will be
   // cleaned up on drop
 }
+
+void Cache::Impl::resize() {}
 
 // Cache::set: Adds a value to the cache
 //
@@ -69,6 +70,7 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
   n.size = size;
   n.val = val;
   pImpl_->map.insert_or_assign(key, n);
+  pImpl_->resize();
 }
 
 // Cache::get: retrieve a value from the cache
@@ -82,7 +84,7 @@ Cache::val_type Cache::get(key_type key, Cache::size_type &val_size) const
 {
   auto search = pImpl_->map.find(key);
   if (search != pImpl_->map.end()) {
-    
+
     val_size = search->second.size;
     return search->second.val;
   }
