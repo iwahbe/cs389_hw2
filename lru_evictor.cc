@@ -25,7 +25,6 @@ void LruEvictor::touch_key(const key_type &key)
   }
   tail = node.get();
   map.insert_or_assign(key_copy, node);
-  print_llist(head);
 }
 
 // LruEvictor::evict: removes leading element from LList, returning it
@@ -38,7 +37,6 @@ const key_type LruEvictor::evict()
   // was a request to evict on a empty
   // list
   assert(head != nullptr);
-  print_llist(head);
   auto key = head->key;
   map.erase(key);
   head = head->next;
