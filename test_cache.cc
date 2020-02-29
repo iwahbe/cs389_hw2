@@ -1,6 +1,6 @@
 #include "cache.hh"
-#include "fifo_evictor.hh"
 #include <iostream>
+#include <vector>
 using namespace std;
 
 // This will handle tests of the cache_lib and evictor_lib files
@@ -92,10 +92,24 @@ bool basic_delete()
   return true;
 }
 
+bool duplicates()
+{
+  // can the cache handle duplicates
+  Cache c(1024);
+  //                         0      1      2      3      4      5
+  vector<char const *> s = {"foo", "bar", "baz", "bim", "bam", "bol"};
+
+  for (unsigned long x = 0; x < s.size(); x++) {
+    for (int i = 0; i < 5; i++) {
+      set_string(c, to_string(x), s[x]);
+    }
+  }
+  assert(c.space_used() == 24);
+  return true;
+}
+
 int main()
 {
-  basic_insert_plus_queary();
-  empty_query();
-  basic_delete();
-  return 0;
+  // runs a series of tests
+  return !(basic_insert_plus_queary() && empty_query() && basic_delete());
 }

@@ -1,24 +1,28 @@
 cmake_minimum_required(VERSION 3.16.0)
 
-SET(DCMAKE_BUILD_TYPE Debug)
+SET(CMAKE_CXX_STANDARD 17)
 
-SET(DCMAKE_EXPORT_COMPILE_COMMANDS YES)
-
-SET(CMAKE_CXX_COMPILER "g++")
-
-project(hash_it_out CXX)
+set(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -stdlib=libc++ -g -fsanitize=address")
 
 add_library(cache STATIC cache_lib.cc cache.hh evictor.hh)
 
-add_library(fifo_evictor STATIC evictor.hh fifo_evictor.hh fifo_evictor.cc)
-
-add_library(lru_evictor STATIC evictor.hh lru_evictor.hh lru_evictor.cc)
-
-SET(CMAKE_CXX_FLAGS "-pedantic -Wall -Wextra -std=c++17 -stdlib=libc++")
+add_library(evictor STATIC evictor.hh fifo_evictor.hh
+  fifo_evictor.cc lru_evictor.hh lru_evictor.cc)
 
 
+SET(CMAKE_CXX_COMPILER "g++")
 
-add_executable(test test.cc)
-target_link_libraries(test PUBLIC cache)
-target_link_libraries(test PUBLIC fifo_evictor)
-target_link_libraries(test PUBLIC lru_evictor)
+SET(CMAKE_BUILD_TYPE "Debug")
+
+project(hash_it_out CXX)
+
+
+enable_testing()
+# basic test of raw cache
+add_executable(test_cache test_cache.cc)
+target_link_libraries(test_cache PUBLIC cache evictor)
+add_test(test_cache test_cache)
+# test of evictors
+add_executable(test_evictors test_evictors.cc)
+target_link_libraries(test_evictors PUBLIC cache evictor)
+add_test(test_evictors test_evictors)
