@@ -57,8 +57,9 @@ void Cache::Impl::resize() {}
 
 void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
 {
-  // TODO: implement deep copy
   Cache::size_type current = 0;
+  // get necessary to retrieve size of possible old entry
+  // with the same key
   get(key, current);
   auto newsize = size + pImpl_->current_mem - current;
   if (newsize > pImpl_->maxmem) {
@@ -71,14 +72,19 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
       del(pImpl_->evictor->evict());
     }
   }
+  key_type key_copy = key;
   pImpl_->current_mem += size;
   Cache::Impl::MapNode n;
   n.size = size;
-  n.val = val;
+  void *copy_val = malloc(size);
+  // val better be a pointer
+  memcpy(copy_val, val, size);
+  n.val = (Cache::val_type)copy_val;
   if (pImpl_->evictor != nullptr) {
-    pImpl_->evictor->touch_key(key);
+    pImpl_->evictor->touch_key(key_copy);
   }
-  pImpl_->map.insert_or_assign(key, n);
+
+  pImpl_->map.insert_or_assign(key_copy, n);
   pImpl_->resize();
 }
 
