@@ -20,7 +20,10 @@ class Cache::Impl {
     map.max_load_factor(max_load_factor);
   }
 
-  ~Impl() { delete evictor; }
+  ~Impl()
+  {
+    // A Cache does not own the Evictor
+  }
 
   // owned values
   Cache::size_type maxmem;
@@ -47,20 +50,21 @@ Cache::~Cache()
   // cleaned up on drop
 }
 
-void Cache::Impl::resize() {}
-
 // Cache::set: Adds a value to the cache
 //
 // key_type key: the key
 // Cache::val_type val: the value
 // Cache::size_type size: the size of the value in size_type
-
+#include <iostream>
 void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
 {
   Cache::size_type current = 0;
   // get necessary to retrieve size of possible old entry
   // with the same key
-  get(key, current);
+  auto search = pImpl_->map.find(key);
+  if (search != pImpl_->map.end()) {
+    current = search->second.size;
+  }
   auto newsize = size + pImpl_->current_mem - current;
   if (newsize > pImpl_->maxmem) {
     if (pImpl_->evictor == nullptr || size > pImpl_->maxmem) {
@@ -69,23 +73,28 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
       return;
     }
     while (pImpl_->current_mem + size > pImpl_->maxmem) {
-      del(pImpl_->evictor->evict());
+      key_type k = pImpl_->evictor->evict();
+      del(k);
     }
   }
-  key_type key_copy = key;
+
   pImpl_->current_mem += size;
   Cache::Impl::MapNode n;
   n.size = size;
+  // cleaned up in Cache::del
   void *copy_val = malloc(size);
   // val better be a pointer
   memcpy(copy_val, val, size);
   n.val = (Cache::val_type)copy_val;
   if (pImpl_->evictor != nullptr) {
-    pImpl_->evictor->touch_key(key_copy);
+    pImpl_->evictor->touch_key(key);
   }
-
-  pImpl_->map.insert_or_assign(key_copy, n);
-  pImpl_->resize();
+  if ((search = pImpl_->map.find(key)) != pImpl_->map.end()) {
+    // we are about to replace this struct,
+    // so we need to delete what hangs from it
+    delete search->second.val;
+  }
+  pImpl_->map.insert_or_assign(key, n);
 }
 
 // Cache::get: retrieve a value from the cache
@@ -116,7 +125,6 @@ Cache::val_type Cache::get(key_type key, Cache::size_type &val_size) const
 // key_type key: a key
 //
 // return bool: if the value was found
-
 bool Cache::del(key_type key)
 {
   auto found = pImpl_->map.find(key);

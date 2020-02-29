@@ -25,10 +25,12 @@ void LruEvictor::touch_key(const key_type &key)
 
 const key_type LruEvictor::evict()
 {
-  auto key = head->key;
-  del_in_list(key);
-  map.erase(key);
-  return key;
+  if (head == nullptr) {
+    return nullptr;
+  }
+  auto node = del_in_list(head->key);
+  map.erase(node->key);
+  return node->key;
 }
 
 // LruEvictor::del_in_list: Deletes the node with `key` from the internal linked
