@@ -67,4 +67,25 @@ bool fifo_duplicates()
   return true;
 }
 
-int main() { return !(fifo_basic() && fifo_duplicates()); }
+bool fifo_unsafe_key()
+{
+  // This ensures that the string copy for key works correctly
+  // Otherwise the test will crash
+  FifoEvictor e{};
+  Cache c(16, 0.75, &e);
+  uint32_t four(4);
+  //                         0      1      2      3      4      5
+  vector<char const *> s = {"foo", "bar", "baz", "bim", "bam", "bol"};
+  for (int i = 0; i < 6; i++) {
+    set_string(c, to_string(i), s[i]);
+  }
+  auto res = c.get(s[2], four);
+  if (res == nullptr) {
+    cout << "fifo_unsafe_key(failure) expected(someptr) found (" << res
+         << ")\n";
+    return false;
+  }
+  return true;
+}
+
+int main() { return !(fifo_basic() && fifo_duplicates() && fifo_unsafe_key()); }
