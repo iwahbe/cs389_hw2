@@ -55,7 +55,6 @@ Cache::~Cache()
 // key_type key: the key
 // Cache::val_type val: the value
 // Cache::size_type size: the size of the value in size_type
-#include <iostream>
 void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
 {
   Cache::size_type current = 0;
@@ -86,15 +85,15 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
   // val better be a pointer
   memcpy(copy_val, val, size);
   n.val = (Cache::val_type)copy_val;
-  if (pImpl_->evictor != nullptr) {
-    pImpl_->evictor->touch_key(key);
-  }
   if ((search = pImpl_->map.find(key)) != pImpl_->map.end()) {
     // we are about to replace this struct,
     // so we need to delete what hangs from it
     delete search->second.val;
   }
   pImpl_->map.insert_or_assign(key, n);
+  if (pImpl_->evictor != nullptr) {
+    pImpl_->evictor->touch_key(key);
+  }
 }
 
 // Cache::get: retrieve a value from the cache
@@ -109,7 +108,7 @@ Cache::val_type Cache::get(key_type key, Cache::size_type &val_size) const
   auto search = pImpl_->map.find(key);
   if (search != pImpl_->map.end()) {
     if (pImpl_->evictor != nullptr) {
-      pImpl_->evictor->touch_key(key);
+      pImpl_->evictor->touch_key(search->first);
     }
     val_size = search->second.size;
     return search->second.val;

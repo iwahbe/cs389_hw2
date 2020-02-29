@@ -4,9 +4,10 @@ LruEvictor::~LruEvictor() {}
 
 void LruEvictor::touch_key(const key_type &key)
 {
+  const key_type key_copy = key;
   // removes old element from list
-  std::shared_ptr<LruEvictor::ListNode> node;
-  if ((del_in_list(key) = node) == nullptr) {
+  std::shared_ptr<LruEvictor::ListNode> node = del_in_list(key_copy);
+  if (node == nullptr) {
     // we didn't find a node
     // so we create a new one
     node = std::shared_ptr<LruEvictor::ListNode>(new LruEvictor::ListNode);
@@ -14,9 +15,17 @@ void LruEvictor::touch_key(const key_type &key)
   // reset node correctly
   node->next = nullptr;
   node->prev = tail;
-  tail->next = node;
+  node->key = key;
+  if (tail != nullptr) {
+    tail->next = node;
+  }
+  else {
+    assert(head == nullptr);
+    head = node;
+  }
   tail = node.get();
-  map.insert_or_assign(key, node);
+  map.insert_or_assign(key_copy, node);
+  print_llist(head);
 }
 
 // LruEvictor::evict: removes leading element from LList, returning it
@@ -25,12 +34,18 @@ void LruEvictor::touch_key(const key_type &key)
 
 const key_type LruEvictor::evict()
 {
+  // if head == nullptr then there
+  // was a request to evict on a empty
+  // list
+  assert(head != nullptr);
+  print_llist(head);
+  auto key = head->key;
+  map.erase(key);
+  head = head->next;
   if (head == nullptr) {
-    return nullptr;
+    tail = nullptr;
   }
-  auto node = del_in_list(head->key);
-  map.erase(node->key);
-  return node->key;
+  return key;
 }
 
 // LruEvictor::del_in_list: Deletes the node with `key` from the internal linked
