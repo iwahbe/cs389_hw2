@@ -1,6 +1,8 @@
 #include "cache.hh"
 #include <iostream>
 #include <vector>
+#include <cstring>
+#include <cassert>
 using namespace std;
 
 // This will handle tests of the cache_lib and evictor_lib files

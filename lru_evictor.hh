@@ -2,6 +2,8 @@
 
 #include "evictor.hh"
 #include <unordered_map>
+#include <memory>
+#include <cassert>
 
 class LruEvictor : public Evictor {
     public:

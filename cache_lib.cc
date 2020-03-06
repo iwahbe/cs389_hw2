@@ -1,12 +1,30 @@
 #include "cache.hh"
+#include <cstring>
 #include <unordered_map>
+#include <memory>
 
 class Cache::Impl {
     public:
   // Hash map value
-  using MapNode = struct {
-    Cache::size_type size;
-    Cache::val_type val;
+  class MapNode{
+  public:
+    MapNode(Cache::size_type s, Cache::val_type v) : size_(s), val_(v){}
+    MapNode(const Cache&) = delete;
+    MapNode& operator=(const Cache&) = delete;
+    Cache::size_type size() const{
+      return size_;
+    }
+    Cache::val_type val() const{
+      return val_;
+    }
+
+    ~MapNode(){
+      free((void*)val_);
+    }
+
+  private:
+    Cache::size_type size_;
+    Cache::val_type val_;
   };
 
   Impl(Cache::size_type maxmem, float max_load_factor, Evictor *evictor,
@@ -14,7 +32,7 @@ class Cache::Impl {
       : maxmem(maxmem), evictor(evictor), hasher(hasher), current_mem(0)
   {
     auto comp = [](key_type k1, key_type k2) { return k1 == k2; };
-    map = std::unordered_map<key_type, MapNode, Cache::hash_func,
+    map = std::unordered_map<key_type, std::unique_ptr<MapNode>, Cache::hash_func,
                              std::function<bool(key_type, key_type)>>(0, hasher,
                                                                       comp);
     map.max_load_factor(max_load_factor);
@@ -22,14 +40,15 @@ class Cache::Impl {
 
   ~Impl()
   {
-    // A Cache does not own the Evictor
+    // A Cache does not own the Evictor,
+    // while the values are owned from MapNode
   }
 
   // owned values
   Cache::size_type maxmem;
   Evictor *evictor;
   Cache::hash_func hasher;
-  std::unordered_map<key_type, MapNode, Cache::hash_func,
+  std::unordered_map<key_type, std::unique_ptr<MapNode>, Cache::hash_func,
                      std::function<bool(key_type, key_type)>>
       map;
   Cache::size_type current_mem;
@@ -48,6 +67,7 @@ Cache::~Cache()
 {
   // cache holds only a unique ptr to Impl, which will be
   // cleaned up on drop
+  // it also must clean up the map  
 }
 
 // Cache::set: Adds a value to the cache
@@ -62,7 +82,7 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
   // with the same key
   auto search = pImpl_->map.find(key);
   if (search != pImpl_->map.end()) {
-    current = search->second.size;
+    current = search->second->size();
   }
   auto newsize = size + pImpl_->current_mem - current;
   if (newsize > pImpl_->maxmem) {
@@ -78,19 +98,14 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
   }
 
   pImpl_->current_mem += size;
-  Cache::Impl::MapNode n;
-  n.size = size;
+
   // cleaned up in Cache::del
+  // all values deleted on drop
   void *copy_val = malloc(size);
   // val better be a pointer
   memcpy(copy_val, val, size);
-  n.val = (Cache::val_type)copy_val;
-  if ((search = pImpl_->map.find(key)) != pImpl_->map.end()) {
-    // we are about to replace this struct,
-    // so we need to delete what hangs from it
-    delete search->second.val;
-  }
-  pImpl_->map.insert_or_assign(key, n);
+  pImpl_->map[key] = std::unique_ptr<Cache::Impl::MapNode>(
+      new Cache::Impl::MapNode(size, (Cache::val_type)copy_val));
   if (pImpl_->evictor != nullptr) {
     pImpl_->evictor->touch_key(key);
   }
@@ -110,8 +125,8 @@ Cache::val_type Cache::get(key_type key, Cache::size_type &val_size) const
     if (pImpl_->evictor != nullptr) {
       pImpl_->evictor->touch_key(search->first);
     }
-    val_size = search->second.size;
-    return search->second.val;
+    val_size = search->second->size();
+    return search->second->val();
   }
   else {
     val_size = 0;
@@ -128,7 +143,7 @@ bool Cache::del(key_type key)
 {
   auto found = pImpl_->map.find(key);
   if (found != pImpl_->map.end()) {
-    pImpl_->current_mem -= found->second.size;
+    pImpl_->current_mem -= found->second->size();
     // we have found a value to delete
     pImpl_->map.erase(key);
     return true;

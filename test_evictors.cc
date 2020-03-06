@@ -3,6 +3,8 @@
 #include "lru_evictor.hh"
 #include <iostream>
 #include <vector>
+#include <cstring>
+#include <cassert>
 using namespace std;
 
 uint32_t set_string(Cache &c, string key, char const *val)
