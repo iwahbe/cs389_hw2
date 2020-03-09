@@ -14,13 +14,13 @@ as attempting to beat it's performance for a school assignment seemed unnecessar
 mention) difficult. I default to the `std::hash` function, as required in `cache.hh`.
 
 ## Part 4: Collision resolution (5%)
-I (using the stl) maintain a bucket (collision) list. Not only does this still get $O(1)$ time, 
+I (using the stl) maintain a bucket (collision) list. Not only does this still get `O(1)` time, 
 but it is required by the standard. This makes it the best tested, safest approach, while still
 running in constant time. 
 
 ## Part 5: Dynamic resizing (5%)
 Again, using `std::unordered_map` instead of implementing my own hash-map makes this trivial.
-I can simply set my maps `max_load_factor` to $0.75$ or any other value. Resizing is then 
+I can simply set my maps `max_load_factor` to `0.75` or any other value. Resizing is then 
 taken care of by the standard template library. 
 
 ## Part 6: Eviction policy (20%)
@@ -29,8 +29,8 @@ pops the front of the queue.
 
 ## Part 7: LRU (10% extra credit)
 For my LRU Evictor (see `lru_evictor.hh`, `lru_evictor.cc`), I maintain a hybrid data structure
-composed of a map and a doubly linked list to provide the necessary $O(1)$ guarantees.  Ordering
+composed of a map and a doubly linked list to provide the necessary `O(1)` guarantees.  Ordering
 is provided by the linked list. Note: a linked list has constant time `pop_front` and `push_back`.
-To deal with updates in $O(1)$ time, I map into the nodes of my linked list. If `touch_key` is 
+To deal with updates in `O(1)` time, I map into the nodes of my linked list. If `touch_key` is 
 called on a node already in the linked list, it is found with the map, then removed and appended
 to the back of the list.
