@@ -36,7 +36,9 @@ const key_type LruEvictor::evict()
   // if head == nullptr then there
   // was a request to evict on a empty
   // list
-  assert(head != nullptr);
+  if (head == nullptr) {
+    return "";
+  }
   auto key = head->key;
   map.erase(key);
   head = head->next;
