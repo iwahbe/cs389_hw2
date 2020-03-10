@@ -26,3 +26,8 @@ add_test(test_cache test_cache)
 add_executable(test_evictors test_evictors.cc)
 target_link_libraries(test_evictors PUBLIC cache evictor)
 add_test(test_evictors test_evictors)
+add_custom_target(MainTest ALL)
+add_dependencies(MainTest test_evictors test_cache)
+add_custom_command(TARGET MainTest
+  POST_BUILD
+  COMMAND ctest --output-on-failure)
