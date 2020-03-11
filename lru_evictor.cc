@@ -1,6 +1,16 @@
 #include "lru_evictor.hh"
 
-LruEvictor::~LruEvictor() {}
+LruEvictor::LruEvictor()
+{
+  head = nullptr;
+  tail = nullptr;
+}
+
+LruEvictor::~LruEvictor()
+{
+  // cleanup of the linked list is handled with the shared pointers
+  // there is no cycle because we use raw pointers for previous
+}
 
 void LruEvictor::touch_key(const key_type &key)
 {
@@ -15,7 +25,7 @@ void LruEvictor::touch_key(const key_type &key)
   // reset node correctly
   node->next = nullptr;
   node->prev = tail;
-  node->key = key;
+  node->key = key_copy;
   if (tail != nullptr) {
     tail->next = node;
   }
@@ -24,7 +34,7 @@ void LruEvictor::touch_key(const key_type &key)
     head = node;
   }
   tail = node.get();
-  map.insert_or_assign(key_copy, node);
+  map.insert({key_copy, node});
 }
 
 // LruEvictor::evict: removes leading element from LList, returning it
@@ -39,13 +49,10 @@ const key_type LruEvictor::evict()
   if (head == nullptr) {
     return "";
   }
-  auto key = head->key;
-  map.erase(key);
-  head = head->next;
-  if (head == nullptr) {
-    tail = nullptr;
-  }
-  return key;
+
+  auto temp = del_in_list(head->key);
+  map.erase(temp->key);
+  return temp->key;
 }
 
 // LruEvictor::del_in_list: Deletes the node with `key` from the internal linked
@@ -82,8 +89,8 @@ LruEvictor::del_in_list(const key_type &key)
     }
     else {
       // node in center of the list
-      auto prev = node->prev;
-      auto next = node->next;
+      ListNode *prev = node->prev;
+      std::shared_ptr<ListNode> next = node->next;
       prev->next = next;
       next->prev = prev;
       return node;

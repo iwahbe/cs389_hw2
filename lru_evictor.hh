@@ -1,13 +1,13 @@
 #pragma once
 
 #include "evictor.hh"
-#include <unordered_map>
-#include <memory>
 #include <cassert>
+#include <memory>
+#include <unordered_map>
 
 class LruEvictor : public Evictor {
     public:
-  LruEvictor() = default;
+  LruEvictor();
   ~LruEvictor() override;
   void touch_key(const key_type &key) override;
   const key_type evict() override;
@@ -23,7 +23,10 @@ class LruEvictor : public Evictor {
     std::shared_ptr<ListNode> next;
     ListNode *prev;
   };
+  // methods
   std::shared_ptr<LruEvictor::ListNode> del_in_list(const key_type &key);
+
+  // data
   std::unordered_map<key_type, std::shared_ptr<ListNode>> map;
   std::shared_ptr<ListNode> head;
   ListNode *tail;

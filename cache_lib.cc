@@ -1,28 +1,22 @@
 #include "cache.hh"
 #include <cstring>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 
 class Cache::Impl {
     public:
   // Hash map value
-  class MapNode{
-  public:
-    MapNode(Cache::size_type s, Cache::val_type v) : size_(s), val_(v){}
-    MapNode(const Cache&) = delete;
-    MapNode& operator=(const Cache&) = delete;
-    Cache::size_type size() const{
-      return size_;
-    }
-    Cache::val_type val() const{
-      return val_;
-    }
+  class MapNode {
+      public:
+    MapNode(Cache::size_type s, Cache::val_type v) : size_(s), val_(v) {}
+    MapNode(const Cache &) = delete;
+    MapNode &operator=(const Cache &) = delete;
+    Cache::size_type size() const { return size_; }
+    Cache::val_type val() const { return val_; }
 
-    ~MapNode(){
-      free((void*)val_);
-    }
+    ~MapNode() { free((void *)val_); }
 
-  private:
+      private:
     Cache::size_type size_;
     Cache::val_type val_;
   };
@@ -32,9 +26,10 @@ class Cache::Impl {
       : maxmem(maxmem), evictor(evictor), hasher(hasher), current_mem(0)
   {
     auto comp = [](key_type k1, key_type k2) { return k1 == k2; };
-    map = std::unordered_map<key_type, std::unique_ptr<MapNode>, Cache::hash_func,
-                             std::function<bool(key_type, key_type)>>(0, hasher,
-                                                                      comp);
+    map =
+        std::unordered_map<key_type, std::unique_ptr<MapNode>, Cache::hash_func,
+                           std::function<bool(key_type, key_type)>>(0, hasher,
+                                                                    comp);
     map.max_load_factor(max_load_factor);
   }
 
@@ -67,7 +62,7 @@ Cache::~Cache()
 {
   // cache holds only a unique ptr to Impl, which will be
   // cleaned up on drop
-  // it also must clean up the map  
+  // it also must clean up the map
 }
 
 // Cache::set: Adds a value to the cache
@@ -80,10 +75,8 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
   Cache::size_type current = 0;
   // get necessary to retrieve size of possible old entry
   // with the same key
-  auto search = pImpl_->map.find(key);
-  if (search != pImpl_->map.end()) {
-    current = search->second->size();
-  }
+  get(key, current);
+
   auto newsize = size + pImpl_->current_mem - current;
   if (newsize > pImpl_->maxmem) {
     if (pImpl_->evictor == nullptr || size > pImpl_->maxmem) {
@@ -96,7 +89,7 @@ void Cache::set(key_type key, Cache::val_type val, Cache::size_type size)
       del(k);
     }
   }
-
+  del(key);
   pImpl_->current_mem += size;
 
   // cleaned up in Cache::del
